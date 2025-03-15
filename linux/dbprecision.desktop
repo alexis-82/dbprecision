@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=dBPrecision
+Comment=Normalizzazione professionale di file MP3
+Exec=python3 /home/alessio/Sviluppo/normalizer/normal.py
+Icon=/home/alessio/Sviluppo/normalizer/icon/dbprecision.png
+Terminal=false
+Categories=AudioVideo;Audio;Music;
+Keywords=audio;mp3;normalizzazione;volume;
+StartupNotify=true

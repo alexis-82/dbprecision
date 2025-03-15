@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Path
+if [ -z "$1" ]; then
+    # Se non viene fornito alcun parametro, usa pwd (comportamento originale, ma non consigliato)
+    path=$(pwd)
+    echo "Attenzione: Nessun percorso fornito, uso pwd: $path"
+else
+    # Usa il percorso passato come primo parametro
+    path="$1"
+    echo "Uso il percorso fornito: $path"
+fi
+
+# Create Link
+echo "Copio l'icona da $path/icons/dbprecision.png a /usr/share/icons"
+cp $path/icons/dbprecision.png /usr/share/icons
+touch /usr/share/applications/dbprecision.desktop
+
+cat << EOF >> /usr/share/applications/dbprecision.desktop
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=DBPrecision
+GenericName[it]=Normalizzazione professionale di file MP3
+Comment[it]=Normalizzazione professionale di file MP3
+Exec=python3 $path/main.py
+Terminal=false
+Icon=/usr/share/icons/dbprecision.png
+Type=Application
+Categories=AudioVideo;Audio;Music;
+Keywords=audio;mp3;normalizzazione;volume;
+StartupNotify=true
+EOF
+
+# Various Settings
+cd /usr/share/icons/
+chmod 644 dbprecision.png
+echo
+sleep 2
+echo "Installazione Patch completata!"
+sleep 2
+echo
