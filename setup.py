@@ -16,9 +16,7 @@ include_files = [
     # Includi la directory delle icone
     ('icons', 'icons'),
     # Includi la directory per Linux se presente
-    ('linux', 'linux'),
-    # Includi il file batch se presente
-    ('run.bat', 'run.bat')
+    ('linux', 'linux')
 ]
 
 # Opzioni per il build
