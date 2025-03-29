@@ -9,7 +9,7 @@
 **dBPrecision** è un'applicazione professionale per normalizzare il volume dei file MP3 mantenendo la qualità audio originale e tutti i metadati, incluse le immagini di copertina.
 
 <p align="center">
-  <img src="icons/dbprecision.png" alt="Logo dBPrecision" width="150">
+  <img src="https://i.postimg.cc/d0Xq1kyX/dbprecision.png" alt="Logo dBPrecision" width="150">
 </p>
 
 ## ✨ Caratteristiche
