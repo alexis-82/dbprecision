@@ -8,7 +8,7 @@ import json
 import requests
 from PyQt6.QtWidgets import *
 from PyQt6.QtCore import *
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 from mutagen.mp3 import MP3
 from mutagen.id3 import ID3
 import array  # Per la lettura dei dati audio
@@ -68,6 +68,7 @@ class MP3Normalizer(QMainWindow):
 
     def initUI(self):
         self.setWindowTitle('dBPrecision')
+        self.setWindowIcon(QIcon("icons/dbprecision.png"))
         self.setGeometry(100, 100, 800, 600)  
         
         # Creazione della barra dei menu
