@@ -101,7 +101,3 @@ Per contribuire al progetto o segnalare problemi, contatta l'autore.
 Copyright 2025 dBPrecision. Tutti i diritti riservati.
 
 ---
-
-<p align="center">
-  <a href="https://dbsp.io">https://dbsp.io</a>
-</p>
