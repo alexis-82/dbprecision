@@ -28,10 +28,10 @@ class AboutDialog(QDialog):
         layout.addWidget(title)
         
         description = QLabel(
-            "<p>Versione: 1.0</p>"
+            "<p>Versione: 1.1.0</p>"
             "<p>Applicazione per normalizzare il volume dei file MP3 mantenendo la qualità audio originale "
             "e tutti i metadati (incluse le immagini).</p>"
-            "<p>Per ulteriori informazioni, visita il sito web: https://dbsp.io</p>"
+            "<p>Per ulteriori informazioni, visita il sito web: https://www.alexis82.it</p>"
             "<p>Realizzato da: Alessio Abrugiati</p>"
             "<p>Copyright 2025 dBPrecision. Tutti i diritti riservati.</p>"
         )

@@ -57,7 +57,7 @@ executables = [
 # Configurazione setup
 setup(
     name='dBPrecision',
-    version='1.0.0',
+    version='1.1.0',
     description='Applicazione per normalizzare il volume dei file MP3',
     author='Alessio Abrugiati',
     options={'build_exe': build_options},
