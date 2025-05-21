@@ -376,28 +376,36 @@ class MP3Normalizer(QMainWindow):
         self.quality_value_label.setText(quality_text)
 
     def select_folder(self):
-        folder = QFileDialog.getExistingDirectory(self, 'Seleziona un file MP3 o una cartella')
-        if folder:
-            self.selected_folder = folder
-            self.selected_files = []  # Resetta file selezionati
-            self.is_single_file_mode = False
-            self.folder_label.setText(f'Cartella selezionata: {folder}')
-            self.log_area.append(f'Cartella selezionata: {folder}')
-            
-            # Riempi la tabella con i nomi dei file (senza analisi)
-            mp3_files = self.get_mp3_files()
-            self.files_table.setRowCount(len(mp3_files))
-            
-            for i, file_path in enumerate(mp3_files):
-                filename = os.path.basename(file_path)
-                self.files_table.setItem(i, 0, QTableWidgetItem(filename))
-                self.files_table.setItem(i, 1, QTableWidgetItem(''))  # Colonna volume vuota
-                self.files_table.setItem(i, 2, QTableWidgetItem(''))  # Colonna bitrate vuota
-                self.files_table.setItem(i, 3, QTableWidgetItem('In attesa di analisi'))
-            
-            # Aggiungi un messaggio
-            self.log_area.append(f'Trovati {len(mp3_files)} file MP3. Premi "Analizza file MP3" per iniziare l\'analisi')
-            
+        # Utilizziamo opzioni speciali per permettere la selezione di unità intere
+        dialog = QFileDialog(self)
+        dialog.setWindowTitle('Seleziona una cartella o un\'unità')
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        # Rimuoviamo ShowDirsOnly per consentire la selezione di unità
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        
+        if dialog.exec():
+            folder = dialog.selectedFiles()[0]
+            if folder:
+                self.selected_folder = folder
+                self.selected_files = []  # Resetta file selezionati
+                self.is_single_file_mode = False
+                self.folder_label.setText(f'Cartella selezionata: {folder}')
+                self.log_area.append(f'Cartella selezionata: {folder}')
+                
+                # Riempi la tabella con i nomi dei file (senza analisi)
+                mp3_files = self.get_mp3_files()
+                self.files_table.setRowCount(len(mp3_files))
+                
+                for i, file_path in enumerate(mp3_files):
+                    filename = os.path.basename(file_path)
+                    self.files_table.setItem(i, 0, QTableWidgetItem(filename))
+                    self.files_table.setItem(i, 1, QTableWidgetItem(''))  # Colonna volume vuota
+                    self.files_table.setItem(i, 2, QTableWidgetItem(''))  # Colonna bitrate vuota
+                    self.files_table.setItem(i, 3, QTableWidgetItem('In attesa di analisi'))
+                
+                # Aggiungi un messaggio
+                self.log_area.append(f'Trovati {len(mp3_files)} file MP3. Premi "Analizza file MP3" per iniziare l\'analisi')
+
     def select_file(self):
         files, _ = QFileDialog.getOpenFileNames(self, 'Seleziona File MP3', '', 'File MP3 (*.mp3)')
         if files:
@@ -437,7 +445,101 @@ class MP3Normalizer(QMainWindow):
         if self.is_single_file_mode:
             return self.selected_files
         elif self.selected_folder:
-            return [os.path.join(self.selected_folder, f) for f in os.listdir(self.selected_folder) if f.endswith('.mp3')]
+            mp3_files = []
+            # Normalizziamo il percorso dell'unità
+            folder_path = self.selected_folder
+            
+            # Per semplificare, verifichiamo direttamente se il percorso è un'unità usando una regola più semplice
+            # Un'unità ha la forma "X:" o "X:\" o "X:/"
+            
+            # FORZIAMO is_drive a True per testare
+            is_drive = True
+            
+            # Normalizziamo il percorso sostituendo forward slash con backslash
+            if '/' in folder_path:
+                folder_path = folder_path.replace('/', '\\')
+                self.log_area.append(f'Percorso normalizzato: {folder_path}')
+            
+            # Assicuriamoci che il percorso termini con \\
+            if folder_path.endswith(':'):
+                folder_path = folder_path + '\\'
+            elif not folder_path.endswith(':\\'):
+                # Se non termina già con ':\\', verifichiamo se è un'unità senza '\\'
+                drive_part = os.path.splitdrive(folder_path)[0]
+                if drive_part and len(drive_part) == 2:  # Se ha la forma "G:"
+                    # Assicuriamoci che sia nella forma G:\
+                    if not folder_path.endswith('\\'):
+                        folder_path = drive_part + '\\'
+            
+            # Debug esteso
+            # self.log_area.append(f'Drive part: {os.path.splitdrive(folder_path)[0]}')
+            # self.log_area.append(f'Path part: {os.path.splitdrive(folder_path)[1]}')
+                
+            # Log per debugging
+            # self.log_area.append(f'Cartella selezionata: {folder_path}')
+            
+            if is_drive:
+                progress_dialog = QProgressDialog("Scansione in corso...", "Annulla", 0, 100, self)
+                progress_dialog.setWindowTitle("Ricerca file MP3")
+                progress_dialog.setWindowModality(Qt.WindowModality.WindowModal)
+                progress_dialog.setMinimumDuration(500)  # Mostra dopo 500ms
+                progress_dialog.setValue(0)
+                progress_dialog.show()
+                
+                # Conta file trovati per il progresso
+                file_count = 0
+                total_dirs_processed = 0
+                skipped_dirs = []
+                
+                try:
+                    self.log_area.append(f'Avvio scansione ricorsiva dell\'unità {folder_path} per trovare file MP3...')
+                    # Usa os.walk per la scansione ricorsiva di tutte le directory
+                    for root, dirs, files in os.walk(folder_path, topdown=True):
+                        # Salta directory di sistema o nascoste per velocizzare
+                        dirs[:] = [d for d in dirs if not d.startswith('$') and not d.startswith('.')]
+                        
+                        # Aggiorniamo l'interfaccia e verifichiamo se l'utente ha annullato
+                        QApplication.processEvents()
+                        if progress_dialog.wasCanceled():
+                            self.log_area.append('Scansione annullata dall\'utente')
+                            break
+                        
+                        # Aggiorna progresso ogni 10 directory
+                        total_dirs_processed += 1
+                        if total_dirs_processed % 10 == 0:
+                            progress_dialog.setLabelText(f"Scansione in corso...\nDirectory: {total_dirs_processed}\nFile MP3 trovati: {file_count}")
+                            progress_dialog.setValue(total_dirs_processed % 100)  # Valore circolare
+                        
+                        try:
+                            # Filtra solo i file MP3
+                            for file in files:
+                                if file.lower().endswith('.mp3'):
+                                    mp3_files.append(os.path.join(root, file))
+                                    file_count += 1
+                                    # Aggiorna ogni 20 file
+                                    if file_count % 20 == 0:
+                                        progress_dialog.setLabelText(f"Scansione in corso...\nDirectory: {total_dirs_processed}\nFile MP3 trovati: {file_count}")
+                        except (PermissionError, OSError) as e:
+                            skipped_dirs.append(root)
+                            self.log_area.append(f'Errore di accesso alla directory {root}: {str(e)}')
+                            continue
+                            
+                    self.log_area.append(f'Scansione completata: trovati {len(mp3_files)} file MP3 nell\'unità {folder_path}')
+                    if skipped_dirs:
+                        self.log_area.append(f'Saltate {len(skipped_dirs)} directory per problemi di permesso')
+                except Exception as e:
+                    self.log_area.append(f'Errore durante la scansione: {str(e)}')
+                finally:
+                    progress_dialog.close()
+            else:
+                # Comportamento originale per cartelle normali (non unità)
+                try:
+                    mp3_files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.lower().endswith('.mp3')]
+                    self.log_area.append(f'Trovati {len(mp3_files)} file MP3 nella cartella {folder_path}')
+                except (PermissionError, OSError) as e:
+                    self.log_area.append(f'Errore di accesso alla cartella {folder_path}: {str(e)}')
+            
+            return mp3_files
         return []
 
     def normalize_mp3_files(self):
@@ -798,16 +900,27 @@ class MP3Normalizer(QMainWindow):
 
     # Aggiunta nuova funzione per cancellare la lista di file
     def clear_file_list(self):
-        if self.selected_files:
+        # Verifica se ci sono file selezionati o se è stata selezionata una cartella/unità
+        if self.selected_files or self.selected_folder:
+            # Chiudi qualsiasi finestra di dialogo di progresso aperta
+            # Cerca tutte le finestre di dialogo figlie di tipo QProgressDialog
+            for widget in self.findChildren(QProgressDialog):
+                if widget.isVisible():
+                    self.log_area.append('Chiusura della finestra di progresso in corso...')
+                    widget.close()
+                    
             self.selected_files = []
             self.selected_folder = None
             self.is_single_file_mode = False
             self.folder_label.setText('Seleziona una cartella o un file MP3')
             self.files_table.setRowCount(0)
             self.log_area.append('Lista file cancellata')
-            # Reset della barra di progresso
+            
+            # Reset completo della barra di progresso
+            self.progress_bar.reset()
             self.progress_bar.setValue(0)
-            self.progress_bar.setMaximum(0)
+            self.progress_bar.setMaximum(1)  # Imposta a 1 invece di 0 per evitare il loop infinito
+            QApplication.processEvents()  # Forza l'aggiornamento dell'interfaccia
         else:
             self.log_area.append('Nessun file da cancellare')
 
