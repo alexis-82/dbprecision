@@ -449,27 +449,22 @@ class MP3Normalizer(QMainWindow):
             # Normalizziamo il percorso dell'unità
             folder_path = self.selected_folder
             
-            # Per semplificare, verifichiamo direttamente se il percorso è un'unità usando una regola più semplice
-            # Un'unità ha la forma "X:" o "X:\" o "X:/"
+            # Verifica se il percorso selezionato è un'unità o una cartella normale
+            drive_part, path_part = os.path.splitdrive(folder_path)
             
-            # FORZIAMO is_drive a True per testare
-            is_drive = True
+            # È un'unità se:
+            # 1. Ha un drive (es. "C:")
+            # 2. Il path è vuoto, "/" o "\"
+            is_drive = bool(drive_part and (not path_part or path_part in ['/', '\\']))
             
             # Normalizziamo il percorso sostituendo forward slash con backslash
             if '/' in folder_path:
                 folder_path = folder_path.replace('/', '\\')
                 self.log_area.append(f'Percorso normalizzato: {folder_path}')
             
-            # Assicuriamoci che il percorso termini con \\
-            if folder_path.endswith(':'):
+            # Assicuriamoci che il percorso termini con \\ SOLO se è effettivamente un'unità
+            if is_drive and folder_path.endswith(':'):
                 folder_path = folder_path + '\\'
-            elif not folder_path.endswith(':\\'):
-                # Se non termina già con ':\\', verifichiamo se è un'unità senza '\\'
-                drive_part = os.path.splitdrive(folder_path)[0]
-                if drive_part and len(drive_part) == 2:  # Se ha la forma "G:"
-                    # Assicuriamoci che sia nella forma G:\
-                    if not folder_path.endswith('\\'):
-                        folder_path = drive_part + '\\'
             
             # Debug esteso
             # self.log_area.append(f'Drive part: {os.path.splitdrive(folder_path)[0]}')
@@ -607,8 +602,8 @@ class MP3Normalizer(QMainWindow):
                 else:
                     ffmpeg_cmd = 'ffmpeg'
                 
-                # Converti MP3 in WAV per l'analisi
-                subprocess.run([ffmpeg_cmd, '-y', '-v', 'quiet', '-i', file_path, input_wav_path], check=True)
+                # Converti MP3 in WAV per l'analisi (con ottimizzazioni)
+                subprocess.run([ffmpeg_cmd, '-y', '-v', 'quiet', '-threads', '0', '-i', file_path, input_wav_path], check=True)
                 
                 # Leggi i dati audio usando wave
                 with wave.open(input_wav_path, 'rb') as wav_file:
@@ -696,11 +691,17 @@ class MP3Normalizer(QMainWindow):
                     quality_text = "bassa" if quality_value == 0 else "media" if quality_value == 1 else "alta"
                     self.log_area.append(f"Usando qualità di codifica {quality_text} ({bitrate_kbps}k) per {filename}")
                 
-                # Converti da WAV a MP3 con ffmpeg
+                # Converti da WAV a MP3 con ffmpeg (con ottimizzazioni)
                 try:
+                    # Aggiungi flag di ottimizzazione per velocità
+                    optimization_flags = [
+                        '-threads', '0',           # Usa tutti i core disponibili
+                        '-compression_level', '1'  # Compressione veloce per libmp3lame
+                    ]
+                    
                     subprocess.run(
                         [ffmpeg_cmd, '-y', '-i', temp_wav_path, '-codec:a', 'libmp3lame'] + 
-                        ffmpeg_options + [temp_path], 
+                        optimization_flags + ffmpeg_options + [temp_path], 
                         check=True, 
                         stdout=subprocess.PIPE, 
                         stderr=subprocess.PIPE
@@ -783,12 +784,12 @@ class MP3Normalizer(QMainWindow):
                 with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as tmp_file:
                     tmp_wav = tmp_file.name
                 
-                # Converti MP3 in WAV con opzioni semplici
+                # Converti MP3 in WAV con opzioni semplici (ottimizzato)
                 if ffmpeg_path:
-                    cmd = [ffmpeg_path, '-y', '-v', 'quiet', '-i', file_path, tmp_wav]
+                    cmd = [ffmpeg_path, '-y', '-v', 'quiet', '-threads', '0', '-i', file_path, tmp_wav]
                     self.log_area.append(f'Utilizzo ffmpeg da: {ffmpeg_path}')
                 else:
-                    cmd = ['ffmpeg', '-y', '-v', 'quiet', '-i', file_path, tmp_wav]
+                    cmd = ['ffmpeg', '-y', '-v', 'quiet', '-threads', '0', '-i', file_path, tmp_wav]
                     self.log_area.append(f'Utilizzo ffmpeg dal PATH di sistema')
                 
                 subprocess.run(cmd, check=True)
