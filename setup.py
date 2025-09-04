@@ -47,7 +47,8 @@ executables = [
         script='main.py',
         base=base,
         target_name='dBPrecision.exe' if is_windows else 'dBPrecision',
-        icon='icons/dbprecision.ico' if os.path.exists(os.path.join(base_dir, 'icons/dbprecision.ico')) else None,
+        icon='icons/dbprecision.ico' if os.path.exists(
+            os.path.join(base_dir, 'icons/dbprecision.ico')) else None,
         shortcut_name='dBPrecision',
         shortcut_dir='DesktopFolder',
         copyright='Copyright 2025 dBPrecision. Tutti i diritti riservati.',
@@ -57,7 +58,7 @@ executables = [
 # Configurazione setup
 setup(
     name='dBPrecision',
-    version='1.1.0',
+    version='1.5.0',
     description='Applicazione per normalizzare il volume dei file MP3',
     author='Alessio Abrugiati',
     options={'build_exe': build_options},
