@@ -2,7 +2,7 @@
 
 # 🎚️ dBPrecision
 
-<img src="https://img.shields.io/badge/versione-1.1.0-blue">
+<img src="https://img.shields.io/badge/versione-1.5.0-blue">
 
 </div>
 
